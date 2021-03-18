@@ -1,2 +1,3 @@
 .vscode/ 
 env/ 
+candy_delivery/__pycache__/

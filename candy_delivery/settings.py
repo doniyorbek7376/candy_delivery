@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'candy_delivery_app',
-    'restframework',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
