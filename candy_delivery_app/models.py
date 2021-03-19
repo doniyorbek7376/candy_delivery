@@ -5,14 +5,15 @@ from django.db import models
 
 class Courier(models.Model):
     courier_id = models.IntegerField(primary_key=True)
-    courier_type = models.TextField(choices=['foot', 'bike', 'car'])
+    courier_type = models.TextField(
+        choices=[('foot', 'foot'), ('bike', 'bike'), ('car', 'car')])
     regions = models.JSONField()
     working_hours = models.JSONField()
 
 
 class Order(models.Model):
     order_id = models.IntegerField(primary_key=True)
-    weight = models.DecimalField()
+    weight = models.DecimalField(max_digits=5, decimal_places=3)
     region = models.IntegerField()
     delivery_hours = models.JSONField()
 

@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'candy_delivery.urls'
+ROOT_URLCONF = 'candy_delivery_app.urls'
 
 TEMPLATES = [
     {
