@@ -1,3 +1,4 @@
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.views import Response, Request
 from .models import Courier
@@ -41,8 +42,14 @@ class CourierView(APIView):
             Courier.objects.filter(courier_id=id).update(**request.data)
             courier = Courier.objects.get(courier_id=id)
             serializer = CourierSerializer(courier)
+
+            # TODO: reconsider existing order assignments in case regions, working hours or weight carriage changes
+
             return Response(serializer.data)
-        except Exception as e:
+        except ObjectDoesNotExist as e:
+            print(e)
+            return Response(status=404)
+        except FieldDoesNotExist as e:
             print(e)
             return Response(status=400)
 
