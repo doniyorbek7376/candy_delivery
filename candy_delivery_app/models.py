@@ -13,7 +13,7 @@ class Courier(models.Model):
 
 class Order(models.Model):
     order_id = models.IntegerField(primary_key=True)
-    weight = models.DecimalField(max_digits=5, decimal_places=3)
+    weight = models.DecimalField(max_digits=4, decimal_places=2)
     region = models.IntegerField()
     delivery_hours = models.JSONField()
 

@@ -1,5 +1,5 @@
 from django.test import TestCase
-from .models import Courier
+from .models import Courier, Order
 from rest_framework.test import APIClient
 import json
 
@@ -7,7 +7,6 @@ import json
 
 
 class CouriersTest(TestCase):
-    factory = None
 
     def setUp(self) -> None:
         self.client = APIClient()
@@ -29,7 +28,7 @@ class CouriersTest(TestCase):
         }, format='json')
 
         self.assertEqual(response.status_code, 201)
-        data = json.loads(response.content.decode())
+        data = json.loads(response.content)
         self.assertEqual(data['couriers'][0]['id'], 1)
 
     def test_error_post_request(self):
@@ -49,7 +48,7 @@ class CouriersTest(TestCase):
             'regions': [1, 2, 3, 4]
         }, format='json')
         self.assertEqual(response.status_code, 200)
-        data = json.loads(response.content.decode())
+        data = json.loads(response.content)
         self.assertEqual(data['regions'], [1, 2, 3, 4])
 
     def test_bad_patch_request(self):
@@ -64,3 +63,58 @@ class CouriersTest(TestCase):
         }, format='json')
 
         self.assertEqual(response.status_code, 404)
+
+
+class OrdersTest(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        Order.objects.update_or_create(
+            order_id=15, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
+
+    def test_success_post_request(self):
+        response = self.client.post('/orders', {
+            "data": [
+                {
+                    "order_id": 1,
+                    "weight": 0.23,
+                    "region": 12,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 2,
+                    "weight": 15,
+                    "region": 1,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 3,
+                    "weight": 0.01,
+                    "region": 22,
+                    "delivery_hours": ["09:00-12:00", "16:00-21:30"]
+                }
+            ]
+        }, format='json')
+        self.assertEqual(response.status_code, 201)
+        data = json.loads(response.content)
+        self.assertEqual(data['orders'][0]['id'], 1)
+
+    def test_error_post_request(self):
+        response = self.client.post('/orders', {
+            'data': [
+                {
+                    'order_id': 1,
+                    'weight': 0,
+                    'region': 1,
+                    'delivery_hours': ["09:00-18:00"]
+                },
+                {
+                    'order_id': 2
+                }
+            ]
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content)
+        self.assertEqual(data['validation_error']['orders'][0]['id'], 1)
+        self.assertEqual(len(data['validation_error']['orders']), 2)

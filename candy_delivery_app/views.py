@@ -1,7 +1,7 @@
 from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.views import Response, Request
-from .models import Courier
+from .models import Courier, Order
 from .serializers import CourierSerializer
 
 
@@ -47,10 +47,10 @@ class CourierView(APIView):
 
             return Response(serializer.data)
         except ObjectDoesNotExist as e:
-            print(e)
+            # print(e)
             return Response(status=404)
         except FieldDoesNotExist as e:
-            print(e)
+            # print(e)
             return Response(status=400)
 
     def _validate(self, data: dict):
@@ -62,3 +62,34 @@ class CourierView(APIView):
 
         working_hours = data.get('working_hours', None)
         assert working_hours is None or type(working_hours) == list
+
+
+class OrdersView(APIView):
+
+    def post(self, request, format=None):
+        resp = {'orders': []}
+        errors = []
+        for i in request.data['data']:
+            self._validate(i, errors)
+            resp['orders'].append({'id': i['order_id']})
+        if errors:
+            resp = {
+                'validation_error': {
+                    'orders': errors
+                }
+            }
+            return Response(resp, status=400)
+        for i in request.data['data']:
+            Order.objects.create(**i)
+        return Response(resp, status=201)
+
+    def _validate(self, data: dict, errors: list):
+        try:
+            assert type(data['order_id']) == int
+            assert 0.01 <= data['weight'] <= 50
+            assert data['region'] > 0
+            assert type(data['delivery_hours']) == list
+            assert len(data.items()) == 4
+
+        except:
+            errors.append({'id': data['order_id']})
