@@ -2,6 +2,7 @@ from django.test import TestCase
 from .models import Courier, Order, OrderAssigned, OrderCompleted
 from rest_framework.test import APIClient
 import json
+from django.utils import timezone
 
 # Create your tests here.
 
@@ -155,7 +156,8 @@ class OrderCompleteTest(TestCase):
             order_id=15, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
         courier, _ = Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
             1, 2], working_hours=["10:00-12:00"])
-        OrderAssigned.objects.update_or_create(order=order, courier=courier)
+        OrderAssigned.objects.update_or_create(
+            order=order, courier=courier, assign_time=timezone.now())
 
     def test_success_request(self):
         response = self.client.post('/orders/complete', {

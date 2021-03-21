@@ -2,3 +2,4 @@
 env/ 
 candy_delivery/__pycache__/
 candy_delivery_app/__pycache__/
+candy_delivery_app/migrations/

@@ -132,7 +132,6 @@ class OrderAssignView(APIView):
             }
             return Response(resp, status=200)
         except Exception as e:
-            print(e)
             return Response(status=400)
 
     def _check_interval(self, delivery, working_hours):
@@ -149,3 +148,8 @@ class OrderAssignView(APIView):
             if start_delivery < end_work and start_work < end_delivery:
                 return True
         return False
+
+
+class OrderCompleteView(APIView):
+    def post(self, request, format=None):
+        pass

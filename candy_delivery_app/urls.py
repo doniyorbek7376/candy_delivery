@@ -6,4 +6,5 @@ urlpatterns = [
     path('couriers/<int:id>', views.CourierView.as_view()),
     path('orders', views.OrdersView.as_view()),
     path('orders/assign', views.OrderAssignView.as_view()),
+    path('orders/complete', views.OrderCompleteView.as_view()),
 ]
