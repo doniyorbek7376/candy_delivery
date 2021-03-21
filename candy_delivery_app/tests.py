@@ -1,5 +1,5 @@
 from django.test import TestCase
-from .models import Courier, Order
+from .models import Courier, Order, OrderAssigned, OrderCompleted
 from rest_framework.test import APIClient
 import json
 
@@ -137,6 +137,7 @@ class OrderAssignTest(TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(data['orders'][0]['id'], 25)
+        self.assertEqual(OrderAssigned.objects.get(order_id=25).courier_id, 25)
 
     def test_bad_request(self):
         response = self.client.post('/orders/assign', {
@@ -144,3 +145,32 @@ class OrderAssignTest(TestCase):
         }, format='json')
 
         self.assertEqual(response.status_code, 400)
+
+
+class OrderCompleteTest(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        order, _ = Order.objects.update_or_create(
+            order_id=15, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
+        courier, _ = Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
+            1, 2], working_hours=["10:00-12:00"])
+        OrderAssigned.objects.update_or_create(order=order, courier=courier)
+
+    def test_success_request(self):
+        response = self.client.post('/orders/complete', {
+            "courier_id": 2,
+            "order_id": 33,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['order_id'], 33)
+        self.assertEqual(OrderCompleted.objects.get(order_id=33).courier_id, 2)
+
+    def test_bad_request(self):
+        response = self.client.post('/orders/complete', {
+            "courier_id": 4,
+            "order_id": 33
+        }, format='json')
