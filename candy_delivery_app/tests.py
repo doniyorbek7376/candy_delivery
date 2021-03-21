@@ -153,11 +153,11 @@ class OrderCompleteTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         order, _ = Order.objects.update_or_create(
-            order_id=15, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
-        courier, _ = Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
+            order_id=33, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
+        courier, _ = Courier.objects.update_or_create(courier_id=2, courier_type='foot', regions=[
             1, 2], working_hours=["10:00-12:00"])
         OrderAssigned.objects.update_or_create(
-            order=order, courier=courier, assign_time=timezone.now())
+            order=order, courier=courier, assigned_time=timezone.now())
 
     def test_success_request(self):
         response = self.client.post('/orders/complete', {
@@ -176,3 +176,4 @@ class OrderCompleteTest(TestCase):
             "courier_id": 4,
             "order_id": 33
         }, format='json')
+        self.assertEqual(response.status_code, 400)

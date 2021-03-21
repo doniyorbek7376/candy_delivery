@@ -28,4 +28,4 @@ class OrderAssigned(models.Model):
 class OrderCompleted(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     courier = models.ForeignKey(Courier, on_delete=models.SET_NULL, null=True)
-    complete_time = models.DateTimeField(default=timezone.now())
+    complete_time = models.DateTimeField()

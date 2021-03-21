@@ -152,4 +152,14 @@ class OrderAssignView(APIView):
 
 class OrderCompleteView(APIView):
     def post(self, request, format=None):
-        pass
+        try:
+            courier = Courier.objects.get(
+                courier_id=request.data['courier_id'])
+            order = Order.objects.get(order_id=request.data['order_id'])
+            OrderAssigned.objects.get(order=order, courier=courier)
+            OrderCompleted.objects.create(**request.data)
+            return Response({
+                'order_id': request.data['order_id']
+            }, status=200)
+        except:
+            return Response(status=400)
