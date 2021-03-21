@@ -110,7 +110,7 @@ class CourierView(APIView):
         c = {'foot': 2, 'bike': 5, 'car': 9}[courier.courier_type]
         earnings = OrderCompleted.objects.aggregate(
             count=Count('order'))['count']
-        earnings *= c
+        earnings *= c * 500
         return earnings
 
 
