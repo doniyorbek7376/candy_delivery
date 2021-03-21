@@ -5,6 +5,7 @@ from .models import Courier, Order, OrderAssigned, OrderCompleted
 from .serializers import CourierSerializer
 import datetime
 from django.utils import timezone
+from django.db.models import Avg, Count
 
 
 def _check_interval(delivery, working_hours):
@@ -83,6 +84,35 @@ class CourierView(APIView):
         working_hours = data.get('working_hours', None)
         assert working_hours is None or type(working_hours) == list
 
+    def get(self, request, id, format=None):
+        try:
+            courier = Courier.objects.get(courier_id=id)
+            serializer = CourierSerializer(courier)
+            resp = {**serializer.data}
+            rating = self._calculate_rating(courier)
+            if rating is not None:
+                resp['rating'] = rating
+            resp['earnings'] = self._calculate_earnings(courier)
+            return Response(resp, status=200)
+        except ObjectDoesNotExist:
+            return Response(status=404)
+
+    def _calculate_rating(self, courier: Courier) -> float:
+        avg_times = [i['avg_time'] for i in OrderCompleted.objects.values(
+            'order__region').annotate(avg_time=Avg('time_taken'))]
+        if not avg_times:
+            return None
+        t = min(avg_times)
+        rating = (60*60 - min(t, 60*60))/(60*60)*5
+        return round(rating, 2)
+
+    def _calculate_earnings(self, courier: Courier) -> int:
+        c = {'foot': 2, 'bike': 5, 'car': 9}[courier.courier_type]
+        earnings = OrderCompleted.objects.aggregate(
+            count=Count('order'))['count']
+        earnings *= c
+        return earnings
+
 
 class OrdersView(APIView):
 
@@ -133,8 +163,7 @@ class OrderAssignView(APIView):
                     orders.append(order)
                     assigned, _ = OrderAssigned.objects.get_or_create(order=order, courier=courier, defaults={
                         'order': order,
-                        'courier': courier,
-                        'assigned_time': timezone.now()
+                        'courier': courier
                     })
                     if assigned_time:
                         assigned_time = max(
@@ -159,11 +188,24 @@ class OrderCompleteView(APIView):
             order = Order.objects.get(order_id=request.data['order_id'])
             order_assigned = OrderAssigned.objects.get(
                 order=order, courier=courier)
-            OrderCompleted.objects.create(**request.data)
-            order_assigned: OrderAssigned
+            try:
+                time_start = OrderCompleted.objects.filter(
+                    courier=courier).latest('complete_time').completed_time
+            except ObjectDoesNotExist:
+                time_start = order_assigned.assigned_time
+            request.data['complete_time'] = timezone.datetime.strptime(
+                request.data['complete_time'] + "+0000",
+                "%Y-%m-%dT%H:%M:%S.%fZ%z"
+            )
+
+            order_completed = OrderCompleted.objects.create(**request.data)
+            order_completed.time_taken = int((
+                order_completed.complete_time - time_start).total_seconds())
+            order_completed.save()
             order_assigned.delete()
             return Response({
                 'order_id': request.data['order_id']
             }, status=200)
-        except:
+        except Exception as e:
+            # print(e)
             return Response(status=400)

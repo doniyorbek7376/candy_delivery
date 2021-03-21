@@ -22,10 +22,11 @@ class Order(models.Model):
 class OrderAssigned(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     courier = models.ForeignKey(Courier, on_delete=models.CASCADE)
-    assigned_time = models.DateTimeField()
+    assigned_time = models.DateTimeField(auto_now_add=True)
 
 
 class OrderCompleted(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     courier = models.ForeignKey(Courier, on_delete=models.SET_NULL, null=True)
     complete_time = models.DateTimeField()
+    time_taken = models.IntegerField(default=0)

@@ -11,8 +11,12 @@ class CouriersTest(TestCase):
 
     def setUp(self) -> None:
         self.client = APIClient()
-        Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
+        courier, _ = Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
             1, 2], working_hours=["09:00-18:00"])
+        order, _ = Order.objects.update_or_create(
+            order_id=15, weight=3.0, region=1, delivery_hours=["09:00-18:00"])
+        OrderCompleted.objects.create(
+            order=order, courier=courier, complete_time=timezone.now(), time_taken=120)
         return super().setUp()
 
     def test_success_post_request(self):
@@ -63,6 +67,17 @@ class CouriersTest(TestCase):
             'regions': [1, 2, 3]
         }, format='json')
 
+        self.assertEqual(response.status_code, 404)
+
+    def test_success_get_request(self):
+        response = self.client.get('/couriers/25')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        # self.assertIsNotNone(data.get('rating', None))
+        self.assertIsNotNone(data.get('earnings', None))
+
+    def test_bad_request(self):
+        response = self.client.get('/couriers/125')
         self.assertEqual(response.status_code, 404)
 
 
@@ -157,13 +172,13 @@ class OrderCompleteTest(TestCase):
         courier, _ = Courier.objects.update_or_create(courier_id=2, courier_type='foot', regions=[
             1, 2], working_hours=["10:00-12:00"])
         OrderAssigned.objects.update_or_create(
-            order=order, courier=courier, assigned_time=timezone.now())
+            order=order, courier=courier)
 
     def test_success_request(self):
         response = self.client.post('/orders/complete', {
             "courier_id": 2,
             "order_id": 33,
-            "complete_time": "2021-01-10T10:33:01.42Z"
+            "complete_time": "2021-04-10T10:33:01.42Z"
         }, format='json')
 
         self.assertEqual(response.status_code, 200)
