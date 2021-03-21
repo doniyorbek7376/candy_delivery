@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'ao!!a#_ast7g_vqwwb=eab9gno0t(y8z^0$m)wv7=lz(#&@*qe'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'candy_delivery_app.urls'
+ROOT_URLCONF = 'candy_delivery.urls'
 
 TEMPLATES = [
     {
