@@ -118,3 +118,29 @@ class OrdersTest(TestCase):
         data = json.loads(response.content)
         self.assertEqual(data['validation_error']['orders'][0]['id'], 1)
         self.assertEqual(len(data['validation_error']['orders']), 2)
+
+
+class OrderAssignTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        Courier.objects.update_or_create(courier_id=25, courier_type='foot', regions=[
+                                         10], working_hours=["09:00-18:00"])
+        Courier.objects.update_or_create(courier_id=35, courier_type='foot', regions=[
+                                         100], working_hours=["09:00-18:00"])
+        Order.objects.update_or_create(
+            order_id=25, weight=2, region=10, delivery_hours=["09:00-18:00"])
+
+    def test_success_request(self):
+        response = self.client.post('/orders/assign', {
+            'courier_id': 25
+        }, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['orders'][0]['id'], 25)
+
+    def test_bad_request(self):
+        response = self.client.post('/orders/assign', {
+            'courier_id': 125
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)

@@ -1,8 +1,10 @@
 from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.views import Response, Request
-from .models import Courier, Order
+from .models import Courier, Order, OrderAssigned, OrderCompleted
 from .serializers import CourierSerializer
+import datetime
+from django.utils import timezone
 
 
 class CouriersView(APIView):
@@ -93,3 +95,57 @@ class OrdersView(APIView):
 
         except:
             errors.append({'id': data['order_id']})
+
+
+class OrderAssignView(APIView):
+    def post(self, request, format=None):
+        try:
+            courier = Courier.objects.get(
+                courier_id=request.data['courier_id'])
+            courier: Courier
+            weight = {'foot': 10, 'bike': 15, 'car': 50}[courier.courier_type]
+            complete_order_ids = [
+                complete.order.order_id for complete in OrderCompleted.objects.all()]
+            assigned_to_others = [
+                assigned.order.order_id for assigned in OrderAssigned.objects.exclude(courier=courier)]
+            all_orders = Order.objects.filter(weight__lte=weight).filter(
+                region__in=courier.regions).exclude(order_id__in=complete_order_ids).exclude(order_id__in=assigned_to_others)
+            orders = []
+            assigned_time = None
+            for order in all_orders:
+                if any([self._check_interval(interval, courier.working_hours) for interval in order.delivery_hours]):
+                    orders.append(order)
+                    assigned, _ = OrderAssigned.objects.get_or_create(order=order, courier=courier, defaults={
+                        'order': order,
+                        'courier': courier,
+                        'assigned_time': timezone.now()
+                    })
+                    if assigned_time:
+                        assigned_time = max(
+                            [assigned_time, assigned.assigned_time]
+                        )
+                    else:
+                        assigned_time = assigned.assigned_time
+            resp = {
+                'orders': [{'id': order.order_id} for order in orders],
+                'assign_time': assigned_time
+            }
+            return Response(resp, status=200)
+        except Exception as e:
+            print(e)
+            return Response(status=400)
+
+    def _check_interval(self, delivery, working_hours):
+        start_delivery, end_delivery = delivery.split('-')
+        start_delivery = datetime.time(
+            *[int(i) for i in start_delivery.split(":")])
+        end_delivery = datetime.time(*[int(i)
+                                     for i in end_delivery.split(":")])
+        for working in working_hours:
+            start_work, end_work = working.split("-")
+            start_work = datetime.time(*[int(i)
+                                       for i in start_work.split(":")])
+            end_work = datetime.time(*[int(i) for i in end_work.split(":")])
+            if start_delivery < end_work and start_work < end_delivery:
+                return True
+        return False
